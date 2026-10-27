@@ -1,0 +1,51 @@
+{
+  "accuracy": 0.9367205542725173,
+  "macro_f1": 0.9376336574161217,
+  "weighted_f1": 0.9364430438078484,
+  "correct": 2028,
+  "errors": 137,
+  "sample_size": 2165,
+  "per_team": [
+    {
+      "team": "Billing",
+      "count": 336,
+      "recall": 0.9761904761904762
+    },
+    {
+      "team": "Filters & Consumables",
+      "count": 289,
+      "recall": 0.8685121107266436
+    },
+    {
+      "team": "Installs & Demo",
+      "count": 235,
+      "recall": 0.9744680851063829
+    },
+    {
+      "team": "Product Advice",
+      "count": 225,
+      "recall": 0.9555555555555556
+    },
+    {
+      "team": "Repairs",
+      "count": 624,
+      "recall": 0.9230769230769231
+    },
+    {
+      "team": "Returns & Replacement",
+      "count": 254,
+      "recall": 0.937007874015748
+    },
+    {
+      "team": "Warranty Claims",
+      "count": 202,
+      "recall": 0.9455445544554455
+    }
+  ],
+  "review_coverage_at_0_75": 0.11224018475750577,
+  "auto_accuracy_at_0_75": 0.9745057232049948,
+  "auto_volume_at_0_75": 1922,
+  "validation_type": "chronological last 20%",
+  "selected_model": "TF-IDF word 1-2gram + logistic regression",
+  "train_size": 8657
+}

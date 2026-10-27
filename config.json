@@ -1,0 +1,17 @@
+{
+  "train_file": "train_cleaned.csv",
+  "test_file": "test_unlabelled.csv",
+  "sample_file": "sample_submission.csv",
+  "resolution_file": "resolution_log.csv",
+  "id_column": "request_id",
+  "target_column": "team_label",
+  "date_column": "created_at_ist",
+  "text_columns": [
+    "request_text"
+  ],
+  "category_columns": [],
+  "resolution_id_column": null,
+  "resolution_team_column": null,
+  "minimum_confidence": 0.75,
+  "metric": "accuracy"
+}

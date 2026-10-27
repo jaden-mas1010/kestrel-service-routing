@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service request routing | Kestrel Home</title>
+  <style>
+    :root {
+      --page: #f7f7f4;
+      --white: #fff;
+      --ink: #212a32;
+      --muted: #66727c;
+      --border: #dce0e1;
+      --blue: #234b68;
+      --blue-dark: #193c56;
+      --blue-light: #edf3f6;
+      --green: #2f684d;
+      --green-light: #eef6f0;
+      --amber: #805b20;
+      --amber-light: #fff5e4;
+      --red: #a1423d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 "Segoe UI", Arial, sans-serif; }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid #8db5ca; outline-offset: 2px; }
+    .topline { height: 4px; background: var(--blue); }
+    .site-header { background: var(--white); border-bottom: 1px solid var(--border); }
+    .site-header-inner { width: min(1120px, calc(100% - 42px)); margin: auto; min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+    .identity { display: flex; gap: 12px; align-items: center; }
+    .symbol { display: grid; place-items: center; font-weight: 750; font-size: 18px; height: 38px; width: 38px; color: var(--white); background: var(--blue); border-radius: 4px; }
+    .company { font-weight: 750; font-size: 15px; line-height: 1.2; }
+    .company small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 3px; }
+    .model-status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .status-dot { display: block; width: 8px; height: 8px; flex-shrink: 0; background: #ba8934; border-radius: 50%; }
+    .shell { width: min(1120px, calc(100% - 42px)); margin: 0 auto; padding: 32px 0 50px; }
+    .breadcrumb { color: var(--muted); font-size: 13px; margin: 0 0 11px; }
+    h1 { margin: 0; font-size: clamp(26px, 3vw, 33px); letter-spacing: -.025em; line-height: 1.2; font-weight: 720; }
+    .intro { color: var(--muted); max-width: 620px; margin: 10px 0 27px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(330px, .9fr); gap: 17px; align-items: stretch; }
+    .panel { background: var(--white); border: 1px solid var(--border); border-radius: 7px; min-width: 0; }
+    .panel-content { padding: 25px; }
+    .panel-title { margin: 0 0 6px; font-size: 19px; line-height: 1.3; font-weight: 700; }
+    .panel-help { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 14px; }
+    .field { display: flex; flex-direction: column; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
+    .field.full { grid-column: 1 / -1; }
+    .field input, .field textarea { width: 100%; padding: 11px 12px; font-weight: 400; min-height: 42px; background: #fff; color: var(--ink); border: 1px solid #c8ced1; border-radius: 4px; }
+    .field input::placeholder, .field textarea::placeholder { color: #82909b; }
+    .field textarea { min-height: 122px; resize: vertical; }
+    .controls { display: flex; align-items: center; gap: 11px; margin-top: 22px; flex-wrap: wrap; }
+    .btn { min-height: 42px; padding: 9px 17px; font-weight: 650; border-radius: 4px; border: 1px solid transparent; }
+    .btn-main { background: var(--blue); color: white; }
+    .btn-main:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-other { color: var(--ink); background: #fff; border-color: #bfc7cb; }
+    .btn-other:hover { background: #f3f5f5; }
+    .fineprint { margin: 13px 0 0; font-size: 12px; color: var(--muted); }
+    .error { color: #842d2d; background: #fff1ef; border: 1px solid #e2b6b1; border-radius: 4px; padding: 12px; margin-top: 16px; font-size: 13px; }
+    .result-panel { display: flex; flex-direction: column; }
+    .result-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .state { display: inline-block; color: #476374; background: #ecf1f4; padding: 5px 9px; border-radius: 3px; font-size: 12px; font-weight: 650; }
+    .state.review { color: var(--amber); background: var(--amber-light); }
+    .state.ready { color: var(--green); background: var(--green-light); }
+    .initial-state { margin: 30px 0 0; padding: 24px; background: #f8f9f8; border: 1px dashed var(--border); text-align: center; color: var(--muted); font-size: 14px; border-radius: 4px; }
+    .team-label { margin: 25px 0 6px; font-size: 12px; color: var(--muted); }
+    .team-name { margin: 0; font-size: 30px; line-height: 1.15; font-weight: 750; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .score-line { display: flex; align-items: baseline; justify-content: space-between; margin-top: 23px; gap: 12px; font-size: 13px; color: var(--muted); }
+    .score-line strong { font-size: 19px; color: var(--ink); }
+    .bar { background: #e7eaea; height: 6px; overflow: hidden; margin-top: 8px; border-radius: 3px; }
+    .bar-fill { background: var(--blue); height: 100%; width: 0; transition: width .15s; }
+    .assessment-note { font-size: 12px; color: var(--muted); margin: 10px 0 24px; }
+    .section-heading { font-size: 14px; margin: 22px 0 8px; font-weight: 700; border-top: 1px solid #e9ebeb; padding-top: 18px; }
+    .explanations { margin: 6px 0 0; padding-left: 19px; font-size: 13px; line-height: 1.6; }
+    .explanations li { padding: 2px 0; }
+    .alternative { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eef0f0; font-size: 13px; }
+    .alternative:last-child { border-bottom: 0; }
+    .alternative b { font-variant-numeric: tabular-nums; color: var(--ink); }
+    .table-panel { margin-top: 19px; }
+    .table-panel .panel-content { padding-bottom: 12px; }
+    .tickets { margin-top: -6px; }
+    .ticket { display: grid; grid-template-columns: 110px minmax(0, 1fr) 72px; width: 100%; gap: 16px; align-items: center; text-align: left; padding: 12px 0; border: 0; border-bottom: 1px solid #ecefef; background: transparent; color: var(--ink); }
+    .ticket:hover, .ticket:focus-visible { background: #f4f7f8; }
+    .ticket:last-child { border-bottom: 0; }
+    .ticket-id { font-size: 12px; color: var(--blue); font-weight: 700; }
+    .ticket-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ticket-action { justify-self: end; font-size: 12px; color: var(--blue); font-weight: 650; }
+    .empty-note { padding: 8px 0 18px; color: var(--muted); font-size: 13px; }
+    .evaluation { margin-top: 23px; border-top: 1px solid #cfd5d8; padding-top: 18px; }
+    .evaluation h2 { margin: 0 0 4px; font-size: 16px; }
+    .evaluation > p { margin: 0 0 16px; font-size: 12px; color: var(--muted); }
+    .eval-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .eval-item { padding: 4px 20px 4px 0; }
+    .eval-item + .eval-item { padding-left: 20px; border-left: 1px solid var(--border); }
+    .eval-number { font-weight: 730; font-size: 23px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .eval-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 20px; }
+    [hidden] { display: none !important; }
+    @media(max-width: 850px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+    @media(max-width: 580px) {
+      .site-header-inner, .shell { width: calc(100% - 28px); }
+      .site-header-inner { min-height: 68px; }
+      .shell { padding-top: 25px; }
+      .panel-content { padding: 18px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .ticket { grid-template-columns: 88px minmax(0, 1fr); gap: 8px; }
+      .ticket-action { display: none; }
+      .eval-grid { grid-template-columns: 1fr; gap: 12px; }
+      .eval-item, .eval-item + .eval-item { padding: 0; border: 0; }
+      .eval-number { font-size: 21px; }
+      .footer { flex-direction: column; gap: 4px; }
+    }
+    @media(prefers-reduced-motion: reduce) { .bar-fill { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="topline"></div>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="identity">
+        <div class="symbol" aria-hidden="true">K</div>
+        <div class="company">Kestrel Home <small>Service operations</small></div>
+      </div>
+      <div class="model-status"><span class="status-dot" id="light"></span><span id="model-indicator">Checking model</span></div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <p class="breadcrumb">Service desk / Request routing</p>
+    <h1>Service request routing</h1>
+    <p class="intro">Enter a customer's issue to suggest the service team. Check the result before assigning the ticket.</p>
+
+    <div class="workspace">
+      <section class="panel" aria-labelledby="new-request-heading">
+        <div class="panel-content">
+          <h2 class="panel-title" id="new-request-heading">New request</h2>
+          <p class="panel-help">Add the details available when the customer first contacts support.</p>
+          <form id="route-form">
+            <div id="fields" class="form-grid"></div>
+            <div class="controls">
+              <button class="btn btn-main" id="run-button" type="submit" disabled>Suggest team</button>
+              <button class="btn btn-other" id="clear-button" type="button">Clear</button>
+            </div>
+            <p class="fineprint">The suggestion does not assign or transfer a ticket.</p>
+          </form>
+          <div id="form-error" role="alert"></div>
+        </div>
+      </section>
+
+      <section class="panel result-panel" aria-labelledby="recommendation-heading">
+        <div class="panel-content">
+          <div class="result-top">
+            <h2 class="panel-title" id="recommendation-heading">Recommended team</h2>
+            <span class="state" id="decision-tag">No result</span>
+          </div>
+          <div id="result-empty" class="initial-state">Enter a request on the left to see the suggested team and supporting details.</div>
+          <div id="result" hidden aria-live="polite">
+            <p class="team-label">Suggested destination</p>
+            <p class="team-name" id="result-team"></p>
+            <div class="score-line"><span>Model confidence</span><strong id="score-number">—</strong></div>
+            <div class="bar" aria-hidden="true"><div class="bar-fill" id="confidence-bar"></div></div>
+            <p class="assessment-note" id="confidence-label">This score is an estimate, not a guarantee.</p>
+            <h3 class="section-heading">Reason for suggestion</h3>
+            <ul class="explanations" id="reasons"></ul>
+            <h3 class="section-heading">Other possible teams</h3>
+            <div id="alternatives"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel table-panel" aria-labelledby="recent-heading">
+      <div class="panel-content">
+        <h2 class="panel-title" id="recent-heading">Recent requests</h2>
+        <p class="panel-help">Select a ticket to copy its details into the form. This will not route it automatically.</p>
+        <div class="tickets" id="queue-list"><p class="empty-note">Loading local examples...</p></div>
+      </div>
+    </section>
+
+    <section class="evaluation" aria-labelledby="eval-heading">
+      <h2 id="eval-heading">Model evaluation</h2>
+      <p>Historical-label agreement on the held-out requests. This does not measure whether the first team resolved the issue.</p>
+      <div class="eval-grid">
+        <div class="eval-item"><div class="eval-number" id="metric-accuracy">—</div><div class="eval-label">First-team label accuracy</div></div>
+        <div class="eval-item"><div class="eval-number" id="metric-samples">—</div><div class="eval-label">Requests in validation</div></div>
+        <div class="eval-item"><div class="eval-number" id="metric-review">—</div><div class="eval-label">Below 75% confidence</div></div>
+      </div>
+    </section>
+
+    <footer class="footer"><span>Kestrel Home · Service routing prototype</span><span>For evaluation only · Human review required before dispatch</span></footer>
+  </main>
+  <script>
+    (() => {
+      const el = id => document.getElementById(id);
+      let status = null;
+      let examples = [];
+      const html = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[char]));
+      const labels = {
+        request_text: 'Customer message', product_family: 'Product', warranty_status: 'Warranty status',
+        channel: 'Contact channel', created_at_ist: 'Created at (IST)', source: 'Source system'
+      };
+      const labelFor = key => labels[key] || key.replace(/_/g, ' ').replace(/^./, char => char.toUpperCase());
+      const placeholderFor = key => key === 'request_text' ? 'Describe the issue as reported by the customer' : 'Optional';
+
+      function showError(message) {
+        el('form-error').innerHTML = message ? `<div class="error">${html(message)}</div>` : '';
+      }
+
+      function putFields(record = {}) {
+        const textCols = status?.text_columns || [];
+        const catCols = status?.category_columns || [];
+        const cols = [...textCols, ...catCols];
+        const fields = el('fields');
+        if (!cols.length) {
+          fields.innerHTML = '<p class="empty-note">No trained model found. Follow the README setup steps to enable routing.</p>';
+          el('run-button').disabled = true;
+          return;
+        }
+        fields.innerHTML = cols.map(key => {
+          const isText = textCols.includes(key);
+          const value = html(record[key] ?? '');
+          const caption = html(labelFor(key));
+          const field = html(key);
+          return `<label class="field ${isText ? 'full' : ''}"><span>${caption}</span>${isText
+            ? `<textarea name="${field}" rows="4" placeholder="${html(placeholderFor(key))}">${value}</textarea>`
+            : `<input name="${field}" value="${value}" placeholder="${html(placeholderFor(key))}">`}</label>`;
+        }).join('');
+        el('run-button').disabled = !status?.ready;
+      }
+
+      function showResult(result) {
+        el('result-empty').hidden = true;
+        el('result').hidden = false;
+        el('result-team').textContent = result.team || 'Unknown team';
+        const needsReview = result.status === 'REVIEW';
+        el('decision-tag').textContent = needsReview ? 'Review needed' : result.status === 'POLICY' ? 'Policy rule' : 'Suggestion ready';
+        el('decision-tag').className = 'state ' + (needsReview ? 'review' : 'ready');
+        const confidence = Math.max(0, Math.min(1, Number(result.confidence) || 0));
+        el('score-number').textContent = `${Math.round(confidence * 100)}%`;
+        el('confidence-bar').style.width = `${Math.round(confidence * 100)}%`;
+        el('confidence-label').textContent = needsReview
+          ? 'Below the review threshold. Check with a service-desk agent before assigning.'
+          : 'Estimated model probability, not a guarantee. Verify before dispatch.';
+        el('reasons').replaceChildren(...(result.reasons || []).map(reason => {
+          const li = document.createElement('li'); li.textContent = reason; return li;
+        }));
+        el('alternatives').innerHTML = (result.top_teams || []).filter(candidate => candidate.team !== result.team).slice(0, 3).map(candidate =>
+          `<div class="alternative"><span>${html(candidate.team)}</span><b>${Math.round(candidate.probability * 100)}%</b></div>`
+        ).join('');
+      }
+
+      async function boot() {
+        try {
+          const response = await fetch('/api/status');
+          if (!response.ok) throw new Error('Unable to load model status');
+          status = await response.json();
+          el('model-indicator').textContent = status.ready ? 'Model available' : 'Model not set up';
+          el('light').style.background = status.ready ? 'var(--green)' : '#ba8934';
+          const metrics = status.validation || {};
+          el('metric-accuracy').textContent = metrics.accuracy == null ? '—' : (100 * metrics.accuracy).toFixed(1) + '%';
+          el('metric-samples').textContent = metrics.sample_size == null ? '—' : Number(metrics.sample_size).toLocaleString('en-IN');
+          el('metric-review').textContent = metrics.review_coverage_at_0_75 == null ? '—' : (100 * metrics.review_coverage_at_0_75).toFixed(0) + '%';
+          putFields();
+          if (!status.ready) {
+            showError('Routing is unavailable until a model is provided. See README.md for local setup.');
+            el('queue-list').innerHTML = '<p class="empty-note">Recent examples require a local dataset.</p>';
+            return;
+          }
+          const exampleResponse = await fetch('/api/examples');
+          if (!exampleResponse.ok) throw new Error('Unable to load recent requests');
+          examples = (await exampleResponse.json()).rows || [];
+          const list = el('queue-list');
+          list.replaceChildren();
+          if (!examples.length) list.innerHTML = '<p class="empty-note">No example requests are available on this computer.</p>';
+          examples.forEach((row, index) => {
+            const button = document.createElement('button');
+            button.className = 'ticket'; button.type = 'button';
+            const idKey = Object.keys(row).find(key => /_id$/.test(key));
+            const ticketId = row[idKey] || `Request ${index + 1}`;
+            const snippet = (status.text_columns || []).map(key => row[key] || '').join(' ').trim();
+            button.innerHTML = `<span class="ticket-id">${html(ticketId)}</span><span class="ticket-text">${html(snippet || 'Open request')}</span><span class="ticket-action">Use ticket</span>`;
+            button.title = `Load ${ticketId} into the routing form`;
+            button.addEventListener('click', () => {
+              putFields(row); showError('');
+              document.querySelector('#new-request-heading').scrollIntoView({behavior:'smooth', block:'start'});
+            });
+            list.appendChild(button);
+          });
+        } catch (err) {
+          showError('Could not connect to the routing service. Check that the local server is running.');
+          el('queue-list').innerHTML = '<p class="empty-note">Recent requests unavailable.</p>';
+        }
+      }
+
+      el('route-form').addEventListener('submit', async event => {
+        event.preventDefault(); showError('');
+        if (!status?.ready) return;
+        const record = Object.fromEntries(new FormData(event.currentTarget).entries());
+        const button = el('run-button');
+        button.disabled = true; button.textContent = 'Checking...';
+        try {
+          const response = await fetch('/api/route', {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({record})
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Could not route this request');
+          showResult(result);
+        } catch (err) {
+          showError(err.message || 'Unable to route this request');
+        } finally {
+          button.disabled = false; button.textContent = 'Suggest team';
+        }
+      });
+
+      el('clear-button').addEventListener('click', () => {
+        putFields(); showError('');
+        el('result-empty').hidden = false; el('result').hidden = true;
+        el('decision-tag').textContent = 'No result'; el('decision-tag').className = 'state';
+      });
+      boot();
+    })();
+  </script>
+</body>
+</html>
